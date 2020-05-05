@@ -1,5 +1,5 @@
 
-from multiprocessing import Manager, Pool
+from multiprocessing import Manager, Process
 import os
 from time import time
 
@@ -28,54 +28,58 @@ class InvertedIndex:
         return word
 
 
-    def test(self):
-        with Pool(processes=self.num_of_processes) as pool:
-            pool.map(self.open_files, self.files, chunksize=10)
+    def divide_data(self):
+        N = int(len(self.files) / self.num_of_processes)
+        result = [x * N for x in range(self.num_of_processes)]
+        result.append(None)
+
+        return result
+
+
+    def run(self):
+        processes = []
+        chunks = self.divide_data()
+
+        for i in range(self.num_of_processes):
+            p = Process(target=self.open_files, args=(self.files[chunks[i]:chunks[i+1]],))
+            processes.append(p)
+
+        [x.start() for x in processes]
+        [x.join() for x in processes]
 
 
     def open_files(self, files_block):
-        with open(self.directory + files_block) as file_handler:
-            for text in file_handler:
-                text = text.split(' ')
-                text = [self.normalize_word(x) for x in text]
-                self.inverted_index(text, files_block)
+        for file in files_block:
+            with open(self.directory + file) as file_handler:
+                for text in file_handler:
+                    text = text.split(' ')
+                    text = [self.normalize_word(x) for x in text]
+                    # self.inverted_index(text, file)
+                    position = 0
+                    for word in text:
+                        self.index_dictionary[word] = [(file, position)]
+                        position += 1
 
 
-    def inverted_index(self, line, docID):
-        '''
-        add to index_dictionary: keys - 'word', values - (docID, position in file)
-        '''
-        position = 0
-        for word in line:
-            if word not in self.index_dictionary.keys():
-                self.index_dictionary[word] = [(docID, position)]
-            else:
-                self.index_dictionary[word] += [(docID, position)]
-            position += 1
-
-
-    def save_index_dictionary(self):
-        '''
-        save index_dictionary as txt file
-        '''
-
-        with open('inverted_index_parallel.txt', 'a') as file:
-            file.write(str(self.index_dictionary))
-
+    # def inverted_index(self, line, docID):
+    #     '''
+    #     add to index_dictionary: keys - 'word', values - (docID, position in file)
+    #     '''
+    #     position = 0
+    #     for word in line:
+    #         # if word not in self.index_dictionary.keys():
+    #         #     self.index_dictionary[word] = [(docID, position)]
+    #         # else:
+    #         #     self.index_dictionary[word] += ([(docID, position)])
+    #         self.index_dictionary[word] = [(docID, position)]
+    #         position += 1
 
     def __call__(self):
-        self.test()
+        self.run()
 
 
 if __name__ == '__main__':
-    ii = InvertedIndex(directory='C:/Users/Alisa/Desktop/test2/', num_of_processes=4)
+    ii = InvertedIndex(directory='C:/Users/Alisa/Desktop/test/', num_of_processes=2)
     start_time = time()
     ii()
     print(time() - start_time)
-
-
-
-
-
-
-
