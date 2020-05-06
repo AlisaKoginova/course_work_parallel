@@ -1,13 +1,12 @@
 import os
 from time import time
 
-index_dictionary = {}
-
 class InvertedIndex:
 
     def __init__(self, directory):
         self.directory = directory
         self.files = os.listdir(directory)
+        self.index_dictionary = {}
 
 
     def normalize_word(self, word):
@@ -15,7 +14,7 @@ class InvertedIndex:
         word -> lower()
         remove signs
         '''
-        signs = [',', '!', '/', '?', '.', '(', ')', "'", '"']
+        signs = [',', '!', '/', '?', '.', '(', ')', "'", '"', '<', '>']
         word = word.lower()
         if word:
             for sign in signs:
@@ -45,10 +44,10 @@ class InvertedIndex:
         '''
         position = 0
         for word in line:
-            if word not in index_dictionary.keys():
-                index_dictionary[word] = [(docID, position)]
+            if word not in self.index_dictionary.keys():
+                self.index_dictionary[word] = [(docID, position)]
             else:
-                index_dictionary[word].append([(docID, position)])
+                self.index_dictionary[word] += ([(docID, position)])
             position += 1
 
 
@@ -57,7 +56,7 @@ class InvertedIndex:
         save index_dictionary as txt file
         '''
         with open('inverted_index_serial.txt', 'a') as file:
-            file.write(str(index_dictionary))
+            file.write(str(self.index_dictionary))
 
 
     def __call__(self):
