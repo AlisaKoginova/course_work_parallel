@@ -1,13 +1,12 @@
-
-from multiprocessing import Manager, Process
+from multiprocessing import Process, Manager
 import os
 from time import time
 
 class InvertedIndex:
 
     def __init__(self, directory, num_of_processes):
-        manager = Manager()
-        self.index_dictionary = manager.dict()
+        m = Manager()
+        self.index_dictionary = m.Queue()
         self.directory = directory
         self.num_of_processes = num_of_processes
         self.files = os.listdir(directory)
@@ -19,7 +18,7 @@ class InvertedIndex:
         remove signs
         '''
 
-        signs = [',', '!', '/', '?', '.', '(', ')', "'", '"']
+        signs = [',', '!', '/', '?', '.', '(', ')', "'", '"', '<', '>']
         word = word.lower()
         if word:
             for sign in signs:
@@ -54,28 +53,37 @@ class InvertedIndex:
                 for text in file_handler:
                     text = text.split(' ')
                     text = [self.normalize_word(x) for x in text]
-                    # self.inverted_index(text, file)
-                    position = 0
-                    for word in text:
-                        self.index_dictionary[word] = [(file, position)]
-                        position += 1
+                    self.inverted_index(text, file)
 
 
-    # def inverted_index(self, line, docID):
-    #     '''
-    #     add to index_dictionary: keys - 'word', values - (docID, position in file)
-    #     '''
-    #     position = 0
-    #     for word in line:
-    #         # if word not in self.index_dictionary.keys():
-    #         #     self.index_dictionary[word] = [(docID, position)]
-    #         # else:
-    #         #     self.index_dictionary[word] += ([(docID, position)])
-    #         self.index_dictionary[word] = [(docID, position)]
-    #         position += 1
+    def inverted_index(self, line, docID):
+        '''
+        add to index_dictionary: keys - 'word', values - (docID, position in file)
+        '''
+        position = 0
+        local_dict = {}
+        for word in line:
+            if word not in local_dict.keys():
+                local_dict[word] = [(docID, position)]
+            else:
+                local_dict[word] += ([(docID, position)])
+            position += 1
+
+        self.index_dictionary.put(local_dict, timeout=None)
+
+
+    def save_index_dictionary(self):
+        '''
+        save index_dictionary as txt file
+        '''
+        with open('inverted_index_parallel.txt', 'a') as file:
+            while not self.index_dictionary.empty():
+                file.write(str(self.index_dictionary.get(timeout=None)))
+
 
     def __call__(self):
         self.run()
+        self.save_index_dictionary()
 
 
 if __name__ == '__main__':
