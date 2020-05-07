@@ -9,20 +9,6 @@ class InvertedIndex:
         self.index_dictionary = {}
 
 
-    def normalize_word(self, word):
-        '''
-        word -> lower()
-        remove signs
-        '''
-        signs = [',', '!', '/', '?', '.', '(', ')', "'", '"', '<', '>']
-        word = word.lower()
-        if word:
-            for sign in signs:
-                if sign in word:
-                    word = word.replace(sign, '')
-        return word
-
-
     def open_files(self):
         '''
         read all files in directory
@@ -36,6 +22,20 @@ class InvertedIndex:
                     text = text.split(' ')
                     text = [self.normalize_word(x) for x in text]
                     self.inverted_index(text, file)
+
+
+    def normalize_word(self, word):
+        '''
+        word -> lower()
+        remove signs
+        '''
+        signs = [',', '!', '/', '?', '.', '(', ')', "'", '"', '<', '>', ':', ';', '_']
+        word = word.lower()
+        if word:
+            for sign in signs:
+                if sign in word:
+                    word = word.replace(sign, '')
+        return word
 
 
     def inverted_index(self, line, docID):
@@ -65,7 +65,8 @@ class InvertedIndex:
 
 
 if __name__ == '__main__':
-    ii = InvertedIndex(directory='C:/Users/Alisa/Desktop/test/')
+    directory = 'C:/Users/Alisa/Desktop/test/'
     start_time = time()
+    ii = InvertedIndex(directory)
     ii()
-    print(time() - start_time)
+    print(f'Serial result: {time() - start_time}')
